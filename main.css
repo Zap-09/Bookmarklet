@@ -1,6 +1,6 @@
 body{background-color: #9e9d9d;}
 
-.code{
+/* .code{
     margin-left: 10%;
     margin-right: 10%;
     margin-top: 10%;
@@ -8,5 +8,12 @@ body{background-color: #9e9d9d;}
     border-radius: 2px;
     height: 20rem; 
     
-}
+} */
 
+
+#test{
+    height: 20rem ;
+    width: 20rem;
+    overflow:scroll;
+    background-color: red;
+}
