@@ -13,18 +13,24 @@
         <label for="test">CTele</label>
     <div id="test">
         (async function () {
-            const seen = new Set();
-            const urls = [];
-        
-            function shouldIgnore(img) {
+            try {
+              const seen = new Set();
+              const urls = [];
+          
+              function shouldIgnore(img) {
                 const classList = img.classList;
                 return (
-                    classList.contains('header-logo-dark') ||
-                    (classList.contains('header_logo') && classList.contains('header-logo'))
+                  classList.contains('header-logo-dark') ||
+                  (classList.contains('header_logo') && classList.contains('header-logo'))
                 );
-            }
-        
-            function getCleanTitle() {
+              }
+          
+              function getMainElement() {
+                const result = document.evaluate('//*[@id="gallery-1"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                return result.singleNodeValue;
+              }
+          
+              function getCleanTitle() {
                 const h1 = document.querySelector('h1.entry-title');
                 if (!h1) return 'gallery';
                 let text = h1.textContent.trim();
@@ -34,67 +40,84 @@
                 text = text.replace(/[^a-zA-Z0-9\- ]/g, '');
                 text = text.replace(/\s+/g, ' ').trim();
                 return text || 'gallery';
-            }
-        
-            async function scrollAndCollect() {
+              }
+          
+              async function scrollAndCollect() {
+                const mainEl = getMainElement();
+                if (!mainEl) throw new Error('Element with id="gallery-1" not found.');
+          
                 let triesWithoutNew = 0;
                 while (triesWithoutNew < 3) {
-                    window.scrollBy(0, window.innerHeight);
-                    await new Promise(r => setTimeout(r, 800));
-                    const figures = document.querySelectorAll('figure.gallery-item');
-                    let foundNew = false;
-        
-                    figures.forEach(figure => {
-                        const img = figure.querySelector('img');
-                        if (!img || shouldIgnore(img)) return;
-                        const src = img.currentSrc || img.src;
-                        if (src && !seen.has(src)) {
-                            seen.add(src);
-                            urls.push(src);
-                            foundNew = true;
-                        }
-                    });
-        
-                    if (!foundNew) {
-                        triesWithoutNew++;
-                    } else {
-                        triesWithoutNew = 0;
+                  window.scrollBy(0, window.innerHeight);
+                  await new Promise(r => setTimeout(r, 800));
+          
+                  const images = mainEl.querySelectorAll('img');
+                  let foundNew = false;
+          
+                  images.forEach(img => {
+                    if (shouldIgnore(img)) return;
+                    const src = img.currentSrc || img.src;
+                    if (src && !seen.has(src)) {
+                      seen.add(src);
+                      urls.push(src);
+                      foundNew = true;
                     }
+                  });
+          
+                  triesWithoutNew = foundNew ? 0 : triesWithoutNew + 1;
                 }
-            }
-        
-            async function loadJSZip() {
+          
+                if (!urls.length) throw new Error('No images found.');
+              }
+          
+              async function loadJSZip() {
                 if (!window.JSZip) {
-                    const script = document.createElement('script');
-                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-                    document.head.appendChild(script);
-                    await new Promise(resolve => script.onload = resolve);
+                  const script = document.createElement('script');
+                  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                  document.head.appendChild(script);
+                  await new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('Failed to load JSZip library.'));
+                  });
                 }
-            }
-        
-            await loadJSZip();
-            await scrollAndCollect();
-        
-            const zip = new JSZip();
-            const reversed = urls.slice().reverse();
-            for (let i = 0; i < reversed.length; i++) {
+              }
+          
+              await loadJSZip();
+              await scrollAndCollect();
+          
+              const zip = new JSZip();
+              const reversed = urls.slice().reverse();
+          
+              for (let i = 0; i < reversed.length; i++) {
                 const url = reversed[i];
-                const filename = `image_${i + 1}.jpg`;
+                const filename = `image ${i + 1}.jpg`;
                 try {
-                    const blob = await fetch(url).then(r => r.blob());
-                    zip.file(filename, blob);
+                  const blob = await fetch(url).then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.blob();
+                  });
+                  zip.file(filename, blob);
                 } catch (err) {
-                    console.warn(`Failed to fetch ${url}`, err);
+                  console.warn(`Failed to fetch image: ${url}`, err);
                 }
+              }
+          
+              const content = await zip.generateAsync({ type: 'blob' });
+              const zipName = getCleanTitle() + '.zip';
+          
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(content);
+              link.download = zipName;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+          
+            } catch (error) {
+              alert('Error: ' + error.message);
+              console.error(error);
             }
-        
-            const content = await zip.generateAsync({ type: 'blob' });
-            const zipName = getCleanTitle() + '.zip';
-            const zipLink = document.createElement('a');
-            zipLink.href = URL.createObjectURL(content);
-            zipLink.download = zipName;
-            zipLink.click();
-        })();
+          })();
+          
         
     </div>
 
