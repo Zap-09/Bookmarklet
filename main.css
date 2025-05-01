@@ -1,0 +1,16 @@
+body{background-color: #333;}
+
+.code{
+    margin-left: 10%;
+    margin-right: 10%;
+    margin-top: 10%;
+    width: 80%;
+    border-radius: 2px;
+    
+}
+
+pre{
+    height: 20rem; overflow: scroll;
+    background-color: rgb(124, 125, 126);
+    scrollbar-color: rgb(71, 65, 66) rgb(101, 101, 101);
+}

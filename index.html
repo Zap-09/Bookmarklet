@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="main.css">
+    <title>Scripts</title>
+</head>
+<body>
+    <div class="code" >
+        <pre class="language-javascript">
+            <code id="test">
+                (async function() {
+                    const seen = new Set();
+                    const urls = [];
+                  
+                    function shouldIgnore(img) {
+                      const classList = img.classList;
+                      return (
+                        classList.contains('header-logo-dark') ||
+                        (classList.contains('header_logo') && classList.contains('header-logo'))
+                      );
+                    }
+                  
+                    function getMainElement() {
+                      const result = document.evaluate('//*[@id="gallery-1"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                      return result.singleNodeValue;
+                    }
+                  
+                    function getCleanTitle() {
+                      const h1 = document.querySelector('h1.entry-title');
+                      if (!h1) return 'gallery';
+                  
+                      let text = h1.textContent.trim();
+                  
+                      // Remove quoted content
+                      text = text.replace(/["“”'].*?["“”']/g, '');
+                  
+                      // Remove phrases like "81 photos", "1 video", etc.
+                      text = text.replace(/\b\d+\s+(photos?|videos?)\b/gi, '');
+                  
+                      // Remove non-ASCII characters
+                      text = text.replace(/[^\x00-\x7F]/g, '');
+                  
+                      // Remove unwanted punctuation (keep letters, numbers, dash, space)
+                      text = text.replace(/[^a-zA-Z0-9\- ]/g, '');
+                  
+                      // Replace multiple spaces with one, and trim
+                      text = text.replace(/\s+/g, ' ').trim();
+                  
+                      return text || 'gallery';
+                    }
+                  
+                    async function scrollAndCollect() {
+                      let triesWithoutNew = 0;
+                      const mainEl = getMainElement();
+                      if (!mainEl) {
+                        alert('Element with id="gallery-1" not found.');
+                        return;
+                      }
+                  
+                      while (triesWithoutNew < 3) {
+                        window.scrollBy(0, window.innerHeight);
+                        await new Promise(r => setTimeout(r, 800));
+                  
+                        const images = mainEl.querySelectorAll('img');
+                        let foundNew = false;
+                  
+                        images.forEach(img => {
+                          if (shouldIgnore(img)) return;
+                          const src = img.currentSrc || img.src;
+                          if (src && !seen.has(src)) {
+                            seen.add(src);
+                            urls.push(src);
+                            foundNew = true;
+                          }
+                        });
+                  
+                        if (!foundNew) {
+                          triesWithoutNew++;
+                        } else {
+                          triesWithoutNew = 0;
+                        }
+                      }
+                    }
+                  
+                    async function loadJSZip() {
+                      if (!window.JSZip) {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                        document.head.appendChild(script);
+                        await new Promise(resolve => script.onload = resolve);
+                      }
+                    }
+                  
+                    await loadJSZip();
+                    await scrollAndCollect();
+                  
+                    const zip = new JSZip();
+                    const reversed = urls.slice().reverse();
+                  
+                    for (let i = 0; i < reversed.length; i++) {
+                      const url = reversed[i];
+                      const filename = `image_${i + 1}.jpg`;
+                      try {
+                        const blob = await fetch(url).then(r => r.blob());
+                        zip.file(filename, blob);
+                      } catch (err) {
+                        console.warn(`Failed to fetch ${url}`, err);
+                      }
+                    }
+                  
+                    const content = await zip.generateAsync({ type: 'blob' });
+                    const zipName = getCleanTitle() + '.zip';
+                  
+                    const zipLink = document.createElement('a');
+                    zipLink.href = URL.createObjectURL(content);
+                    zipLink.download = zipName;
+                    zipLink.click();
+                  })();
+                  
+            </code>
+        </pre>
+    </div>
+</body>
+</html>
