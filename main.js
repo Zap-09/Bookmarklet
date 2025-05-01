@@ -3,9 +3,10 @@ document.querySelectorAll(".copy").forEach(copyButton => {
         const targetSelector = '.' + copyButton.dataset.copy;
         const targetElement = document.querySelector(targetSelector);
         if (targetElement) {
-            const text = targetElement.textContent.trim();
-            navigator.clipboard.writeText(text)
-                .then(() => alert("Code copied!"))
+            const rawText = targetElement.textContent;
+            const cleanedText = rawText.replace(/\s+/g, ''); // Remove all whitespace
+            navigator.clipboard.writeText(cleanedText)
+                .then(() => alert("Code copied without whitespace!"))
                 .catch(err => alert("Failed to copy: " + err));
         } else {
             alert("Target element not found.");
