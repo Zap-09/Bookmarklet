@@ -15,9 +15,7 @@ body{
     font-size: 1.3rem;
 
     background-color: #36454f;
-    /* background-color: #fff; */
     color: #ffffff;
-    /* color: #f0fff0; */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -26,19 +24,20 @@ h1{
     height: 5rem;
     text-align: center;
     align-content: center;
-    /* box-shadow: #ff0000 10 10 10 ; */
+
     box-shadow: 0px 0px 7px #000000;
 }
 
 a,a:visited{
-    color: #f0fff0;
+    color: #ffffff;
+    text-decoration: none;
 }
 
 a:hover{
-    color: #f0fff0b7;
+    color: #ffffffb7;
 }
 a:active{
-    color: #f0fff082;
+    color: #ffffff82;
 }
 
 ul{
