@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nya Bookmarklet</title>
+    <link rel="stylesheet" href="../css/sub-pages.css">
+    <link rel="shortcut icon" href="../assets/icon.ico" type="image/x-icon">
+    <script src="../scripts/main.js" defer></script>
+</head>
+<body>
+    <h1>
+        C Tele
+    </h1>
+    <main>
+
+        <div>
+            <p class="description">
+            </p>
+        </div>
+        <fieldset id="navigation">
+            <legend>Navigation</legend>
+            <ul>
+                <li>
+                    <a href="../index.html" id="home_btn">Home&nbsp;page</a>
+                    <br>
+                    <br>
+                </li>
+                
+                <li>
+                    <a href="#raw_code_section">Raw code</a>
+                </li>
+                <li>
+                    <a href="#readable_code_section">Readable code</a>
+                </li>
+                <li>
+                    <a href="#bookmark_section">Bookmark</a>
+                </li>
+            </ul>
+        </fieldset>
+        <p class="mobile-mode">Reading the code in mobile isn't the best But you can turn on Desktop mode it might help.</p>
+        <h3 id="raw_code_section">Raw Code</h3>
+        <section id="raw_code">
+            (async () => { const loadScript = src => new Promise(resolve => { const s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s); }); await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'); const delay = ms => new Promise(resolve => setTimeout(resolve, ms)); let galleryTitle = ""; // Global title const waitForImageChange = async (previousSrc) => { const maxAttempts = 20; let attempt = 0; while (attempt < maxAttempts) { const img = document.querySelector('img.m-auto'); if (img && img.src !== previousSrc && img.complete) return img; await delay(500); attempt++; } return null; }; const clickRightHalf = (img) => { const rect = img.getBoundingClientRect(); const x = rect.left + rect.width * 0.75; const y = rect.top + rect.height / 2; const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true, clientX: x, clientY: y, }); img.dispatchEvent(clickEvent); }; const scrapeAllPages = async (maxPages = 100) => { const xpath = "/html/body/div/div/main/section/header/div[2]/h1"; const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null); const h1 = result.singleNodeValue; galleryTitle = h1 ? h1.textContent.trim().replace(/[<>:"/\\|?*]+/g, '_') : "Untitled"; console.log("Gallery Title:", galleryTitle); const startImg = document.querySelector('img[alt="Page 1"]'); if (!startImg) { console.error("No image with alt='Page 1' found."); return []; } startImg.click(); await delay(800); const imageSrcList = []; let previousSrc = ''; let page = 1; while (page <= maxPages) { const img = await waitForImageChange(previousSrc); if (!img) { console.log("Reached end or no new image found."); break; } console.log(`Page ${page}: ${img.src}`); imageSrcList.push(img.src); previousSrc = img.src; await delay(300); clickRightHalf(img); await delay(800); page++; } return imageSrcList; }; const downloadAsZip = async (imageUrls, zipName = "gallery") => { if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') { console.error("JSZip or FileSaver not loaded."); return; } const zip = new JSZip(); const folder = zip.folder(zipName); for (let i = 0; i < imageUrls.length; i++) { const url = imageUrls[i]; try { const response = await fetch(url); const blob = await response.blob(); const ext = blob.type.split('/')[1] || 'jpg'; const fileName = `page-${String(i + 1).padStart(3, '0')}.${ext}`; folder.file(fileName, blob); console.log(`Added: ${fileName}`); } catch (e) { console.warn(`Failed to fetch: ${url}`, e); } } const content = await zip.generateAsync({ type: "blob" }); saveAs(content, `${zipName}.zip`); console.log("Download started."); }; const images = await scrapeAllPages(); await downloadAsZip(images, galleryTitle); })(); 
+        </section>
+
+        <h3 id="readable_code_section">Readable Code</h3>
+        <section>
+            <pre id="readable_code">
+                <code>
+(async () => {
+    const loadScript = src => new Promise(resolve => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        document.head.appendChild(s);
+    });
+    
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
+    
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+    
+    let galleryTitle = ""; // Global title
+    
+    const waitForImageChange = async (previousSrc) => {
+        const maxAttempts = 20;
+        let attempt = 0;
+        while (attempt < maxAttempts) {
+        const img = document.querySelector('img.m-auto');
+        if (img && img.src !== previousSrc && img.complete) return img;
+        await delay(500);
+        attempt++;
+        }
+        return null;
+    };
+    
+    const clickRightHalf = (img) => {
+        const rect = img.getBoundingClientRect();
+        const x = rect.left + rect.width * 0.75;
+        const y = rect.top + rect.height / 2;
+    
+        const clickEvent = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        });
+    
+        img.dispatchEvent(clickEvent);
+    };
+    
+    const scrapeAllPages = async (maxPages = 100) => {
+        const xpath = "/html/body/div/div/main/section/header/div[2]/h1";
+        const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+        const h1 = result.singleNodeValue;
+        galleryTitle = h1 ? h1.textContent.trim().replace(/[<>:"/\\|?*]+/g, '_') : "Untitled";
+    
+        console.log("Gallery Title:", galleryTitle);
+    
+        const startImg = document.querySelector('img[alt="Page 1"]');
+        if (!startImg) {
+        console.error("No image with alt='Page 1' found.");
+        return [];
+        }
+        startImg.click();
+        await delay(800);
+    
+        const imageSrcList = [];
+        let previousSrc = '';
+        let page = 1;
+    
+        while (page <= maxPages) {
+        const img = await waitForImageChange(previousSrc);
+        if (!img) {
+            console.log("Reached end or no new image found.");
+            break;
+        }
+    
+        console.log(`Page ${page}: ${img.src}`);
+        imageSrcList.push(img.src);
+        previousSrc = img.src;
+    
+        await delay(300);
+        clickRightHalf(img);
+        await delay(800);
+        page++;
+        }
+    
+        return imageSrcList;
+    };
+    
+    const downloadAsZip = async (imageUrls, zipName = "gallery") => {
+        if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
+        console.error("JSZip or FileSaver not loaded.");
+        return;
+        }
+    
+        const zip = new JSZip();
+        const folder = zip.folder(zipName);
+    
+        for (let i = 0; i < imageUrls.length; i++) {
+        const url = imageUrls[i];
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const ext = blob.type.split('/')[1] || 'jpg';
+            const fileName = `page-${String(i + 1).padStart(3, '0')}.${ext}`;
+            folder.file(fileName, blob);
+            console.log(`Added: ${fileName}`);
+        } catch (e) {
+            console.warn(`Failed to fetch: ${url}`, e);
+        }
+        }
+    
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, `${zipName}.zip`);
+        console.log("Download started.");
+    };
+    
+    const images = await scrapeAllPages();
+    await downloadAsZip(images, galleryTitle);
+    })();
+                      
+                      
+                </code>
+            </pre>
+        </section>
+
+        <h3 id="bookmark_section"> Bookmark</h3>
+        <section id="bookmark">
+            <pre>
+                <code data-code="booklet">
+javascript:(async function(){
+  const res = await fetch(&apos;https://zap-09.github.io/Bookmarklet/sub-pages/nya.html&apos;);
+  const html = await res.text();
+  const container = document.createElement(&apos;div&apos;);
+  container.innerHTML = html;
+  const section = container.querySelector(&apos;#raw_code&apos;);
+  if (section) {
+    const code = section.textContent.trim();
+    try {
+      eval(code);
+    } catch (e) {
+      alert(&quot;Error running code: &quot; + e.message);
+      console.error(e);
+    }
+  } else {
+    alert(&quot;Script not found in &lt;section id=&apos;raw_code&apos;&gt;.&quot;);
+  }
+})();
+
+                </code>
+            </pre>
+        </section>
+        <button id="copyButton">Copy</button>
+    </main>
+    <footer>
+        <ul>
+            <li>
+        <a href="#">Back to top</a>
+            </li>
+        </ul>
+    </footer>
+</body>
+</html>
