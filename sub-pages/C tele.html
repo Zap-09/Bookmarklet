@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Tele Bookmarklet</title>
+    <link rel="stylesheet" href="../css/sub-pages.css">
+</head>
+<body>
+    <h1>
+        C Tele
+    </h1>
+    <main>
+
+        <div>
+            <p class="description">
+            </p>
+        </div>
+        <fieldset id="navigation">
+            <legend>Navigation</legend>
+            <ul>
+                <li>
+                    <a href="../index.html" id="home_btn">Home&nbsp;page</a>
+                    <br>
+                    <br>
+                </li>
+                
+                <li>
+                    <a href="#raw_code_section">Raw code</a>
+                </li>
+                <li>
+                    <a href="#readable_code_section">Readable code</a>
+                </li>
+                <li>
+                    <a href="">Bookmark</a>
+                </li>
+            </ul>
+        </fieldset>
+        <p class="mobile-mode">Reading the code in mobile isn't the best But you can turn on Desktop mode it might help.</p>
+        <h3 id="raw_code_section">Raw_code</h3>
+        <section id="raw_code">
+            (async function () { try { const seen = new Set(); const urls = []; function shouldIgnore(img) { const classList = img.classList; return ( classList.contains('header-logo-dark') || (classList.contains('header_logo') && classList.contains('header-logo')) ); } function getMainElement() { const result = document.evaluate('//*[@id="gallery-1"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null); return result.singleNodeValue; } function getCleanTitle() { const h1 = document.querySelector('h1.entry-title'); if (!h1) return 'gallery'; let text = h1.textContent.trim(); text = text.replace(/["“”'].*?["“”']/g, ''); text = text.replace(/\b\d+\s+(photos?|videos?)\b/gi, ''); text = text.replace(/[^\x00-\x7F]/g, ''); text = text.replace(/[^a-zA-Z0-9\- ]/g, ''); text = text.replace(/\s+/g, ' ').trim(); return text || 'gallery'; } async function scrollAndCollect() { const mainEl = getMainElement(); if (!mainEl) throw new Error('Element with id="gallery-1" not found.'); let triesWithoutNew = 0; while (triesWithoutNew < 3) { window.scrollBy(0, window.innerHeight); await new Promise(r => setTimeout(r, 800)); const images = mainEl.querySelectorAll('img'); let foundNew = false; images.forEach(img => { if (shouldIgnore(img)) return; const src = img.currentSrc || img.src; if (src && !seen.has(src)) { seen.add(src); urls.push(src); foundNew = true; } }); triesWithoutNew = foundNew ? 0 : triesWithoutNew + 1; } if (!urls.length) throw new Error('No images found.'); } async function loadJSZip() { if (!window.JSZip) { const script = document.createElement('script'); script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; document.head.appendChild(script); await new Promise((resolve, reject) => { script.onload = resolve; script.onerror = () => reject(new Error('Failed to load JSZip library.')); }); } } await loadJSZip(); await scrollAndCollect(); const zip = new JSZip(); const reversed = urls.slice().reverse(); for (let i = 0; i < reversed.length; i++) { const url = reversed[i]; const filename = `image ${i + 1}.jpg`; try { const blob = await fetch(url).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob(); }); zip.file(filename, blob); } catch (err) { console.warn(`Failed to fetch image: ${url}`, err); } } const content = await zip.generateAsync({ type: 'blob' }); const zipName = getCleanTitle() + '.zip'; const link = document.createElement('a'); link.href = URL.createObjectURL(content); link.download = zipName; document.body.appendChild(link); link.click(); document.body.removeChild(link); } catch (error) { alert('Error: ' + error.message); console.error(error); } })(); 
+        </section>
+
+        <h3 id="readable_code_section">Readable Code</h3>
+        <section>
+            <pre id="readable_code">
+                <code>
+(async function () {
+try {
+    const seen = new Set();
+    const urls = [];
+
+    function shouldIgnore(img) {
+    const classList = img.classList;
+    return (
+        classList.contains('header-logo-dark') ||
+        (classList.contains('header_logo') && classList.contains('header-logo'))
+    );
+    }
+
+    function getMainElement() {
+    const result = document.evaluate(
+        '//*[@id="gallery-1"]',
+        document,
+        null,
+        XPathResult.FIRST_ORDERED_NODE_TYPE,
+        null
+    );
+    return result.singleNodeValue;
+    }
+
+    function getCleanTitle() {
+    const h1 = document.querySelector('h1.entry-title');
+    if (!h1) return 'gallery';
+
+    let text = h1.textContent.trim();
+    text = text.replace(/["“”'].*?["“”']/g, '');               // Remove quoted text
+    text = text.replace(/\b\d+\s+(photos?|videos?)\b/gi, '');  // Remove "10 photos"/"3 videos"
+    text = text.replace(/[^\x00-\x7F]/g, '');                  // Remove non-ASCII
+    text = text.replace(/[^a-zA-Z0-9\- ]/g, '');               // Remove symbols except dash
+    text = text.replace(/\s+/g, ' ').trim();                   // Clean up whitespace
+
+    return text || 'gallery';
+    }
+
+    async function scrollAndCollect() {
+    const mainEl = getMainElement();
+    if (!mainEl) throw new Error('Element with id="gallery-1" not found.');
+
+    let triesWithoutNew = 0;
+
+    while (triesWithoutNew < 3) {
+        window.scrollBy(0, window.innerHeight);
+        await new Promise(r => setTimeout(r, 800));
+
+        const images = mainEl.querySelectorAll('img');
+        let foundNew = false;
+
+        images.forEach(img => {
+        if (shouldIgnore(img)) return;
+
+        const src = img.currentSrc || img.src;
+        if (src && !seen.has(src)) {
+            seen.add(src);
+            urls.push(src);
+            foundNew = true;
+        }
+        });
+
+        triesWithoutNew = foundNew ? 0 : triesWithoutNew + 1;
+    }
+
+    if (!urls.length) throw new Error('No images found.');
+    }
+
+    async function loadJSZip() {
+    if (!window.JSZip) {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        document.head.appendChild(script);
+
+        await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load JSZip library.'));
+        });
+    }
+    }
+
+    await loadJSZip();
+    await scrollAndCollect();
+
+    const zip = new JSZip();
+    const reversed = urls.slice().reverse();
+
+    for (let i = 0; i < reversed.length; i++) {
+    const url = reversed[i];
+    const filename = `image ${i + 1}.jpg`;
+
+    try {
+        const blob = await fetch(url).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.blob();
+        });
+
+        zip.file(filename, blob);
+    } catch (err) {
+        console.warn(`Failed to fetch image: ${url}`, err);
+    }
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const zipName = getCleanTitle() + '.zip';
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = zipName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+} catch (error) {
+    alert('Error: ' + error.message);
+    console.error(error);
+}
+})();
+                      
+                </code>
+            </pre>
+        </section>
+
+        <h3 id="bookmark_section"> Bookmark</h3>
+        <section>
+            <pre>
+                <code>
+
+                </code>
+            </pre>
+        </section>
+    </main>
+    <footer>
+        <ul>
+            <li>
+        <a href="#">Back to top</a>
+            </li>
+        </ul>
+    </footer>
+</body>
+</html>
