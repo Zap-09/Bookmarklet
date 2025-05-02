@@ -75,11 +75,11 @@ try {
     if (!h1) return 'gallery';
 
     let text = h1.textContent.trim();
-    text = text.replace(/["“”'].*?["“”']/g, '');               // Remove quoted text
-    text = text.replace(/\b\d+\s+(photos?|videos?)\b/gi, '');  // Remove "10 photos"/"3 videos"
-    text = text.replace(/[^\x00-\x7F]/g, '');                  // Remove non-ASCII
-    text = text.replace(/[^a-zA-Z0-9\- ]/g, '');               // Remove symbols except dash
-    text = text.replace(/\s+/g, ' ').trim();                   // Clean up whitespace
+    text = text.replace(/["“”'].*?["“”']/g, '');               
+    text = text.replace(/\b\d+\s+(photos?|videos?)\b/gi, '');  
+    text = text.replace(/[^\x00-\x7F]/g, '');                  
+    text = text.replace(/[^a-zA-Z0-9\- ]/g, '');               
+    text = text.replace(/\s+/g, ' ').trim();                   
 
     return text || 'gallery';
     }
