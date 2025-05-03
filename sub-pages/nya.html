@@ -122,12 +122,10 @@
         img.dispatchEvent(clickEvent);
     };
     
-    const convertBlobToFile = async (blobUrl) => {
+    const convertBlobToFile = async (blobUrl, filename) => {
         const response = await fetch(blobUrl);
         const blob = await response.blob();
-        const arrayBuffer = await blob.arrayBuffer();
-        const file = new File([arrayBuffer], "image.jpg", { type: blob.type });
-        return file;
+        return new File([await blob.arrayBuffer()], filename, { type: blob.type });
     };
     
     const scrapeAllPages = async () => {
@@ -151,16 +149,31 @@
         if (!img || imageSrcList.includes(img.src)) break;
         imageSrcList.push(img.src);
         previousSrc = img.src;
-        await delay(300);
+        await delay(400);
         clickRightHalf(img);
-        await delay(800);  // Fixed delay for page transition
+        await delay(900);
+        page++;
         }
     
         return imageSrcList;
     };
     
+    const downloadIndividually = async (imageUrls) => {
+        for (let i = 0; i < imageUrls.length; i++) {
+        const url = imageUrls[i];
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+            const blob = await response.blob();
+            saveAs(blob, `picture_${i + 1}.jpg`);
+            await delay(600);
+        } catch (e) {
+            console.error(`Error downloading image ${i + 1}:`, e);
+        }
+        }
+    };
+    
     const downloadAsZip = async (imageUrls, zipName = "gallery") => {
-        if (imageUrls.length === 0) return;
         if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') return;
         const zip = new JSZip();
         const folder = zip.folder(zipName);
@@ -170,18 +183,21 @@
         const url = imageUrls[i];
         try {
             let file;
+            const filename = `picture_${i + 1}.jpg`;
             if (url.startsWith('blob:')) {
-            file = await convertBlobToFile(url);
+            file = await convertBlobToFile(url, filename);
             } else {
             const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
             const blob = await response.blob();
-            file = new File([blob], `image-${i + 1}.jpg`, { type: blob.type });
+            file = new File([blob], filename, { type: blob.type });
             }
-    
             folder.file(file.name, file);
             fileCount++;
-            await delay(300);  // Fixed delay for downloading
-        } catch (e) {}
+            await delay(400);
+        } catch (e) {
+            console.error(`Error adding to zip ${url}:`, e);
+        }
         }
     
         if (fileCount > 0) {
@@ -192,7 +208,12 @@
     
     const images = await scrapeAllPages();
     if (images.length > 0) {
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+        await downloadIndividually(images);
+        } else {
         await downloadAsZip(images, galleryTitle);
+        }
     }
     
     await releaseWakeLock();
