@@ -104,7 +104,7 @@
         const img = document.querySelector('img[alt="Page 1"]');
         if (img) return img;
         window.scrollBy(0, 500);
-        await delay(300);
+        await delay(150);
         }
         return null;
     };
@@ -113,7 +113,7 @@
         for (let attempt = 0; attempt < 30; attempt++) {
         const img = document.querySelector('img.m-auto');
         if (img && img.src !== prevSrc && img.complete && img.naturalWidth > 10) return img;
-        await delay(500);
+        await delay(250);
         }
         return null;
     };
@@ -165,7 +165,7 @@
             }
             folder.file(file.name, file);
             downloadedSet.add(url);
-            await randomDelay(200, 500);
+            await randomDelay(100, 250);
         } catch {}
         }
     
@@ -186,7 +186,7 @@
         if (!startImg) return [];
     
         startImg.click();
-        await delay(1000);
+        await delay(500);
     
         const images = [];
         let previousSrc = '';
@@ -194,10 +194,11 @@
         while (images.length < totalPages) {
         const img = await waitForImageChange(previousSrc);
         if (!img) break;
+    
         const src = img.src;
         if (downloadedSet.has(src)) {
             clickRightHalf(img);
-            await randomDelay(500, 1000);
+            await randomDelay(250, 500);
             continue;
         }
     
@@ -210,9 +211,9 @@
         images.push(src);
         downloadedSet.add(src);
     
-        await randomDelay(400, 1000);
+        await randomDelay(200, 400);
         clickRightHalf(img);
-        await randomDelay(800, 1500);
+        await randomDelay(300, 600);
         }
     
         return images;
@@ -227,7 +228,8 @@
     
     await releaseWakeLock();
     })();
-                      
+                         
+
                 </code>
             </pre>
         </section>
