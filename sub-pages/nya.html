@@ -56,6 +56,32 @@
     
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     
+    let wakeLock = null;
+    const requestWakeLock = async () => {
+        try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+        } catch (err) {}
+    };
+    
+    const releaseWakeLock = async () => {
+        try {
+        if (wakeLock !== null) {
+            await wakeLock.release();
+            wakeLock = null;
+        }
+        } catch (err) {}
+    };
+    
+    await requestWakeLock();
+    
+    document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible' && wakeLock === null) {
+        await requestWakeLock();
+        }
+    });
+    
     let galleryTitle = "";
     
     const scrollToPageOne = async () => {
@@ -127,6 +153,7 @@
     };
     
     const downloadAsZip = async (imageUrls, zipName = "gallery") => {
+        if (imageUrls.length === 0) return;
         if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') return;
         const zip = new JSZip();
         const folder = zip.folder(zipName);
@@ -146,10 +173,13 @@
     };
     
     const images = await scrapeAllPages();
-    if (images.length) {
+    if (images.length > 0) {
         await downloadAsZip(images, galleryTitle);
     }
+    
+    await releaseWakeLock();
     })();
+                      
                       
                       
                       
