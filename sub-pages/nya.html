@@ -513,23 +513,23 @@
             <pre>
                 <code data-code="booklet">
 javascript:(async function(){
-  const res = await fetch(&apos;https://zap-09.github.io/Bookmarklet/sub-pages/nya.html&apos;);
-  const html = await res.text();
-  const container = document.createElement(&apos;div&apos;);
-  container.innerHTML = html;
-  const section = container.querySelector(&apos;#raw_code&apos;);
-  if (section) {
-    const code = section.textContent.trim();
-    try {
-      eval(code);
-    } catch (e) {
-      alert(&quot;Error running code: &quot; + e.message);
-      console.error(e);
-    }
-  } else {
-    alert(&quot;Script not found in &lt;section id=&apos;raw_code&apos;&gt;.&quot;);
-  }
-})();
+    const res = await fetch('https://zap-09.github.io/Bookmarklet/sub-pages/nya.html');
+    const html = await res.text();
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    const section = container.querySelector('#raw_code');
+    if (section) {
+        const code = section.textContent.trim();
+        const wrappedCode = `(async () => { ${code} })();`;
+        try {
+        eval(wrappedCode);
+        } catch (e) {
+        alert("Error running code: " + e.message);
+        console.error(e);
+        }
+    } else {
+        alert("Script not found in <section id='raw_code'>.");
+    })();                 
 
                 </code>
             </pre>
