@@ -83,142 +83,155 @@
     });
     
     let galleryTitle = "";
+    let totalPages = 0;
     
-    const scrollToPageOne = async () => {
-        let attempt = 0;
-        const maxAttempts = 20;
-        while (attempt < maxAttempts) {
-        const img = document.querySelector('img[alt="Page 1"]');
-        if (img) return img;
-        window.scrollBy(0, 500);
-        await delay(300);
-        attempt++;
-        }
-        return null;
-    };
-    
-    const waitForImageChange = async (previousSrc) => {
-        const maxAttempts = 20;
-        let attempt = 0;
-        while (attempt < maxAttempts) {
-        const img = document.querySelector('img.m-auto');
-        if (img && img.src !== previousSrc && img.complete && img.naturalWidth !== 0) return img;
-        await delay(500);
-        attempt++;
-        }
-        return null;
-    };
-    
-    const clickRightHalf = (img) => {
-        const rect = img.getBoundingClientRect();
-        const x = rect.left + rect.width * 0.75;
-        const y = rect.top + rect.height / 2;
-        const clickEvent = new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-        clientX: x,
-        clientY: y,
-        });
-        img.dispatchEvent(clickEvent);
-    };
-    
-    const convertBlobToFile = async (blobUrl, filename) => {
-        const response = await fetch(blobUrl);
-        const blob = await response.blob();
-        return new File([await blob.arrayBuffer()], filename, { type: blob.type });
-    };
-    
-    const scrapeAllPages = async () => {
-        const xpath = "/html/body/div/div/main/section/header/div[2]/h1";
-        const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-        const h1 = result.singleNodeValue;
-        galleryTitle = h1 ? h1.textContent.trim().replace(/[<>:\"/\\|?*]+/g, '_') : "Untitled";
-    
-        const startImg = await scrollToPageOne();
-        if (!startImg) return [];
-    
-        startImg.click();
-        await delay(1000);
-    
-        const imageSrcList = [];
-        let previousSrc = '';
-        let page = 1;
-    
-        while (true) {
-        const img = await waitForImageChange(previousSrc);
-        if (!img || imageSrcList.includes(img.src)) break;
-        imageSrcList.push(img.src);
-        previousSrc = img.src;
-        await delay(400);
-        clickRightHalf(img);
-        await delay(900);
-        page++;
-        }
-    
-        return imageSrcList;
-    };
-    
-    const downloadIndividually = async (imageUrls) => {
-        for (let i = 0; i < imageUrls.length; i++) {
-        const url = imageUrls[i];
+    const getPageCount = () => {
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-            const blob = await response.blob();
-            saveAs(blob, `picture_${i + 1}.jpg`);
-            await delay(600);
+        const result = document.evaluate("/html/body/div/div/main/section/header/div[2]/div[2]/div[1]/a/span", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+        const span = result.singleNodeValue;
+        return span ? parseInt(span.textContent.trim()) : 0;
         } catch (e) {
-            console.error(`Error downloading image ${i + 1}:`, e);
-        }
-        }
-    };
-    
-    const downloadAsZip = async (imageUrls, zipName = "gallery") => {
-        if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') return;
-        const zip = new JSZip();
-        const folder = zip.folder(zipName);
-        let fileCount = 0;
-    
-        for (let i = 0; i < imageUrls.length; i++) {
-        const url = imageUrls[i];
-        try {
-            let file;
-            const filename = `picture_${i + 1}.jpg`;
-            if (url.startsWith('blob:')) {
-            file = await convertBlobToFile(url, filename);
-            } else {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-            const blob = await response.blob();
-            file = new File([blob], filename, { type: blob.type });
-            }
-            folder.file(file.name, file);
-            fileCount++;
-            await delay(400);
-        } catch (e) {
-            console.error(`Error adding to zip ${url}:`, e);
-        }
-        }
-    
-        if (fileCount > 0) {
-        const content = await zip.generateAsync({ type: "blob" });
-        saveAs(content, `${zipName}.zip`);
-        }
-    };
-    
-    const images = await scrapeAllPages();
-    if (images.length > 0) {
-        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-        if (isMobile) {
-        await downloadIndividually(images);
-        } else {
-        await downloadAsZip(images, galleryTitle);
-        }
-    }
-    
-    await releaseWakeLock();
-    })();
+                            return 0;
+                          }
+                        };
                       
+                        const scrollToPageOne = async () => {
+                          let attempt = 0;
+                          const maxAttempts = 20;
+                          while (attempt < maxAttempts) {
+                            const img = document.querySelector('img[alt="Page 1"]');
+                            if (img) return img;
+                            window.scrollBy(0, 500);
+                            await delay(300);
+                            attempt++;
+                          }
+                          return null;
+                        };
+                      
+                        const waitForImageChange = async (previousSrc) => {
+                          const maxAttempts = 20;
+                          let attempt = 0;
+                          while (attempt < maxAttempts) {
+                            const img = document.querySelector('img.m-auto');
+                            if (img && img.src !== previousSrc && img.complete && img.naturalWidth !== 0) return img;
+                            await delay(500);
+                            attempt++;
+                          }
+                          return null;
+                        };
+                      
+                        const clickRightHalf = (img) => {
+                          const rect = img.getBoundingClientRect();
+                          const x = rect.left + rect.width * 0.75;
+                          const y = rect.top + rect.height / 2;
+                          const clickEvent = new MouseEvent("click", {
+                            bubbles: true,
+                            cancelable: true,
+                            clientX: x,
+                            clientY: y,
+                          });
+                          img.dispatchEvent(clickEvent);
+                        };
+                      
+                        const convertBlobToFile = async (blobUrl, filename) => {
+                          const response = await fetch(blobUrl);
+                          const blob = await response.blob();
+                          return new File([await blob.arrayBuffer()], filename, { type: blob.type });
+                        };
+                      
+                        const scrapeAllPages = async () => {
+                          const titleXPath = "/html/body/div/div/main/section/header/div[2]/h1";
+                          const result = document.evaluate(titleXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                          const h1 = result.singleNodeValue;
+                          galleryTitle = h1 ? h1.textContent.trim().replace(/[<>:\"/\\|?*]+/g, '_') : "Untitled";
+                      
+                          totalPages = getPageCount();
+                          if (!totalPages || isNaN(totalPages) || totalPages < 1) return [];
+                      
+                          const startImg = await scrollToPageOne();
+                          if (!startImg) return [];
+                      
+                          startImg.click();
+                          await delay(1000);
+                      
+                          const imageSrcList = [];
+                          let previousSrc = '';
+                          let page = 1;
+                      
+                          while (true) {
+                            const img = await waitForImageChange(previousSrc);
+                            if (!img || imageSrcList.includes(img.src)) break;
+                            imageSrcList.push(img.src);
+                            previousSrc = img.src;
+                            await delay(400);
+                            clickRightHalf(img);
+                            await delay(900);
+                            page++;
+                          }
+                      
+                          return imageSrcList;
+                        };
+                      
+                        const downloadIndividually = async (imageUrls) => {
+                          for (let i = 0; i < imageUrls.length; i++) {
+                            const url = imageUrls[i];
+                            try {
+                              const response = await fetch(url);
+                              if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                              const blob = await response.blob();
+                              saveAs(blob, `picture_${i + 1}.jpg`);
+                              await delay(600);
+                            } catch (e) {}
+                          }
+                        };
+                      
+                        const downloadAsZip = async (imageUrls, zipName = "gallery") => {
+                          if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') return;
+                          const zip = new JSZip();
+                          const folder = zip.folder(zipName);
+                          let fileCount = 0;
+                      
+                          for (let i = 0; i < imageUrls.length; i++) {
+                            const url = imageUrls[i];
+                            try {
+                              let file;
+                              const filename = `picture_${i + 1}.jpg`;
+                              if (url.startsWith('blob:')) {
+                                file = await convertBlobToFile(url, filename);
+                              } else {
+                                const response = await fetch(url);
+                                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                                const blob = await response.blob();
+                                file = new File([blob], filename, { type: blob.type });
+                              }
+                              folder.file(file.name, file);
+                              fileCount++;
+                              await delay(400);
+                            } catch (e) {}
+                          }
+                      
+                          if (fileCount > 0) {
+                            const content = await zip.generateAsync({ type: "blob" });
+                            saveAs(content, `${zipName}.zip`);
+                          }
+                        };
+                      
+                        const images = await scrapeAllPages();
+                        if (images.length !== totalPages) {
+                          alert(`Expected ${totalPages} pages but found ${images.length}. Download aborted.`);
+                        } else {
+                          const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+                          if (isMobile) {
+                            await downloadIndividually(images);
+                          } else {
+                            await downloadAsZip(images, galleryTitle);
+                          }
+                        }
+                      
+                        await releaseWakeLock();
+                      })();
+                      
+
 
                 </code>
             </pre>
