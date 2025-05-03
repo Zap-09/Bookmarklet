@@ -56,9 +56,37 @@
     
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     
+    let wakeLock = null;
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    const downloadedSet = new Set();
     let galleryTitle = "";
     let totalPages = 0;
-    const downloadedSet = new Set();
+    
+    const requestWakeLock = async () => {
+        try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+        } catch (e) {}
+    };
+    
+    const releaseWakeLock = async () => {
+        try {
+        if (wakeLock !== null) {
+            await wakeLock.release();
+            wakeLock = null;
+        }
+        } catch (e) {}
+    };
+    
+    if (isMobile) {
+        await requestWakeLock();
+        document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible' && wakeLock === null) {
+            await requestWakeLock();
+        }
+        });
+    }
     
     const getPageCount = () => {
         try {
@@ -188,14 +216,16 @@
         return images;
     };
     
-    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
     const mode = isMobile ? "immediate" : "zip";
     const images = await scrapeAllPages(mode);
     
     if (!isMobile && images.length) {
         await downloadAsZip(images, galleryTitle);
     }
+    
+    await releaseWakeLock();
     })();
+                      
                       
                       
                       
@@ -210,24 +240,24 @@
         <section id="bookmark">
             <pre>
                 <code data-code="booklet">
-                    javascript:(async function(){
-                        const res = await fetch(&apos;https://zap-09.github.io/Bookmarklet/sub-pages/nya.html&apos;);
-                        const html = await res.text();
-                        const container = document.createElement(&apos;div&apos;);
-                        container.innerHTML = html;
-                        const section = container.querySelector(&apos;#raw_code&apos;);
-                        if (section) {
-                          const code = section.textContent.trim();
-                          try {
-                            eval(code);
-                          } catch (e) {
-                            alert(&quot;Error running code: &quot; + e.message);
-                            console.error(e);
-                          }
-                        } else {
-                          alert(&quot;Script not found in &lt;section id=&apos;raw_code&apos;&gt;.&quot;);
-                        }
-                      })();
+javascript:(async function(){
+    const res = await fetch(&apos;https://zap-09.github.io/Bookmarklet/sub-pages/nya.html&apos;);
+    const html = await res.text();
+    const container = document.createElement(&apos;div&apos;);
+    container.innerHTML = html;
+    const section = container.querySelector(&apos;#raw_code&apos;);
+    if (section) {
+        const code = section.textContent.trim();
+        try {
+        eval(code);
+        } catch (e) {
+        alert(&quot;Error running code: &quot; + e.message);
+        console.error(e);
+        }
+    } else {
+        alert(&quot;Script not found in &lt;section id=&apos;raw_code&apos;&gt;.&quot;);
+    }
+    })();
     
                 </code>
             </pre>
