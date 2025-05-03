@@ -56,32 +56,6 @@
     
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     
-    let wakeLock = null;
-    const requestWakeLock = async () => {
-        try {
-        if ('wakeLock' in navigator) {
-            wakeLock = await navigator.wakeLock.request('screen');
-        }
-        } catch (err) {}
-    };
-    
-    const releaseWakeLock = async () => {
-        try {
-        if (wakeLock !== null) {
-            await wakeLock.release();
-            wakeLock = null;
-        }
-        } catch (err) {}
-    };
-    
-    await requestWakeLock();
-    
-    document.addEventListener('visibilitychange', async () => {
-        if (document.visibilityState === 'visible' && wakeLock === null) {
-        await requestWakeLock();
-        }
-    });
-    
     let galleryTitle = "";
     let totalPages = 0;
     
@@ -90,19 +64,29 @@
         const result = document.evaluate("/html/body/div/div/main/section/header/div[2]/div[2]/div[1]/a/span", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         const span = result.singleNodeValue;
         return span ? parseInt(span.textContent.trim()) : 0;
-        } catch (e) {
+        } catch {
         return 0;
         }
     };
     
     const scrollToPageOne = async () => {
         let attempt = 0;
-        const maxAttempts = 20;
-        while (attempt < maxAttempts) {
+        while (attempt < 20) {
         const img = document.querySelector('img[alt="Page 1"]');
         if (img) return img;
         window.scrollBy(0, 500);
         await delay(300);
+        attempt++;
+        }
+        return null;
+    };
+    
+    const waitForImageChange = async (prevSrc) => {
+        let attempt = 0;
+        while (attempt < 30) {
+        const img = document.querySelector('img.m-auto');
+        if (img && img.src !== prevSrc && img.complete && img.naturalWidth > 10) return img;
+        await delay(500);
         attempt++;
         }
         return null;
@@ -127,14 +111,46 @@
         return new File([await blob.arrayBuffer()], filename, { type: blob.type });
     };
     
-    const scrapeAllPages = async () => {
+    const downloadSingleImage = async (url, index) => {
+        try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        saveAs(blob, `picture_${index + 1}.jpg`);
+        } catch {}
+    };
+    
+    const downloadAsZip = async (images, zipName) => {
+        const zip = new JSZip();
+        const folder = zip.folder(zipName);
+        for (let i = 0; i < images.length; i++) {
+        try {
+            const url = images[i];
+            let file;
+            const name = `picture_${i + 1}.jpg`;
+            if (url.startsWith('blob:')) {
+            file = await convertBlobToFile(url, name);
+            } else {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            file = new File([blob], name, { type: blob.type });
+            }
+            folder.file(file.name, file);
+            await delay(200);
+        } catch {}
+        }
+    
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, `${zipName}.zip`);
+    };
+    
+    const scrapeAllPages = async (mode = "zip") => {
         const titleXPath = "/html/body/div/div/main/section/header/div[2]/h1";
         const result = document.evaluate(titleXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         const h1 = result.singleNodeValue;
         galleryTitle = h1 ? h1.textContent.trim().replace(/[<>:\"/\\|?*]+/g, '_') : "Untitled";
     
         totalPages = getPageCount();
-        if (!totalPages || isNaN(totalPages) || totalPages < 1) return [];
+        if (!totalPages || totalPages < 1) return [];
     
         const startImg = await scrollToPageOne();
         if (!startImg) return [];
@@ -142,101 +158,50 @@
         startImg.click();
         await delay(1000);
     
-        const imageSrcList = [];
+        const images = [];
         const seen = new Set();
+        let previousSrc = '';
     
-        let retries = 0;
-        const maxRetries = 30;
-    
-        while (imageSrcList.length < totalPages && retries < maxRetries) {
-        const img = document.querySelector('img.m-auto');
-        if (img && img.complete && img.naturalWidth > 10) {
-            const src = img.src;
-            if (!seen.has(src)) {
-            imageSrcList.push(src);
+        while (images.length < totalPages) {
+        const img = await waitForImageChange(previousSrc);
+        if (!img) break;
+        const src = img.src;
+        if (!seen.has(src)) {
             seen.add(src);
-            retries = 0;
-            await delay(500);
-            clickRightHalf(img);
-            } else {
-            retries++;
-            await delay(700);
+            previousSrc = src;
+            if (mode === "immediate") {
+            await downloadSingleImage(src, images.length);
             }
-        } else {
-            retries++;
-            await delay(700);
+            images.push(src);
         }
-        }
-    
-        if (imageSrcList.length < totalPages) {
-        alert(`Only fetched ${imageSrcList.length} of ${totalPages} pages. Retry may be needed.`);
+        clickRightHalf(img);
+        await delay(900);
         }
     
-        return imageSrcList;
+        return images;
     };
-    
-    const downloadIndividually = async (imageUrls) => {
-        for (let i = 0; i < imageUrls.length; i++) {
-        const url = imageUrls[i];
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-            const blob = await response.blob();
-            saveAs(blob, `picture_${i + 1}.jpg`);
-            await delay(600);
-        } catch (e) {}
-        }
-    };
-    
-    const downloadAsZip = async (imageUrls, zipName = "gallery") => {
-        if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') return;
-        const zip = new JSZip();
-        const folder = zip.folder(zipName);
-        let fileCount = 0;
-    
-        for (let i = 0; i < imageUrls.length; i++) {
-        const url = imageUrls[i];
-        try {
-            let file;
-            const filename = `picture_${i + 1}.jpg`;
-            if (url.startsWith('blob:')) {
-            file = await convertBlobToFile(url, filename);
-            } else {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-            const blob = await response.blob();
-            file = new File([blob], filename, { type: blob.type });
-            }
-            folder.file(file.name, file);
-            fileCount++;
-            await delay(400);
-        } catch (e) {}
-        }
-    
-        if (fileCount > 0) {
-        const content = await zip.generateAsync({ type: "blob" });
-        saveAs(content, `${zipName}.zip`);
-        }
-    };
-    
-    const images = await scrapeAllPages();
-    
-    if (images.length < totalPages) {
-        const proceed = confirm(`Only found ${images.length} of ${totalPages} pages. Retry?`);
-        if (proceed) location.reload();
-        await releaseWakeLock();
-        return;
-    }
     
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    
+    // ⚠️ Ask for multiple download permission on mobile
     if (isMobile) {
-        await downloadIndividually(images);
-    } else {
-        await downloadAsZip(images, galleryTitle);
+        const link = document.createElement('a');
+        link.href = 'data:text/plain,permission';
+        link.download = 'test.txt';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        alert("Please allow multiple downloads. Once allowed, the images will start downloading.");
     }
     
-    await releaseWakeLock();
+    const mode = isMobile ? "immediate" : "zip";
+    const images = await scrapeAllPages(mode);
+    
+    if (!isMobile && images.length) {
+        await downloadAsZip(images, galleryTitle);
+    }
     })();
+                      
                       
                       
                       
