@@ -158,17 +158,21 @@
         if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') return;
         const zip = new JSZip();
         const folder = zip.folder(zipName);
+        let fileCount = 0;
         for (let i = 0; i < imageUrls.length; i++) {
         const url = imageUrls[i];
         try {
             const response = await fetch(url);
             const blob = await response.blob();
+            if (blob.size === 0) continue;
             const ext = (blob.type.split('/')[1] || 'jpg').split(';')[0];
             const fileName = `page-${String(i + 1).padStart(3, '0')}.${ext}`;
             folder.file(fileName, blob);
+            fileCount++;
             await randomDelay(150, 200);
         } catch (e) {}
         }
+        if (fileCount === 0) return;
         const content = await zip.generateAsync({ type: "blob" });
         saveAs(content, `${zipName}.zip`);
     };
@@ -180,13 +184,7 @@
     
     await releaseWakeLock();
     })();
-                      
-                      
-                      
-                      
-                      
-
-                      
+    
                 </code>
             </pre>
         </section>
