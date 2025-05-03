@@ -44,16 +44,6 @@
             <pre>
                 <code>
 (async () => {
-    const loadScript = src => new Promise(resolve => {
-        const s = document.createElement('script');
-        s.src = src;
-        s.onload = resolve;
-        document.head.appendChild(s);
-    });
-    
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
-    
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     
     let galleryTitle = "";
@@ -111,6 +101,15 @@
         img.dispatchEvent(clickEvent);
     };
     
+    const downloadImage = (url, filename) => {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+    
     const scrapeAllPages = async () => {
         const titleXPath = "/html/body/div/div/main/section/header/div[2]/h1";
         const countXPath = "/html/body/div/div/main/section/header/div[2]/div[2]/div[1]/a/span";
@@ -121,32 +120,28 @@
         const countNode = countResult.singleNodeValue;
         const maxPages = countNode ? parseInt(countNode.textContent.trim()) : 100;
         const startImg = await scrollToPageOne();
-        if (!startImg) return [];
+        if (!startImg) return;
         startImg.click();
         await delay(800);
-        const imageSrcList = [];
         let previousSrc = '';
         let page = 1;
         while (page <= maxPages) {
         const img = await waitForImageChange(previousSrc);
-        if (!img || imageSrcList.includes(img.src)) break;
-        imageSrcList.push(img.src);
+        if (!img || !img.src || img.src === previousSrc) break;
+        const ext = (img.src.split('.').pop().split('?')[0] || 'jpg').split(';')[0];
+        const filename = `${galleryTitle}_page-${String(page).padStart(3, '0')}.${ext}`;
+        downloadImage(img.src, filename);
         previousSrc = img.src;
         await delay(300);
         clickRightHalf(img);
         await delay(800);
         page++;
         }
-        return imageSrcList;
     };
     
-    const images = await scrapeAllPages();
-    if (images.length) {
-        console.log(`Found ${images.length} images in "${galleryTitle}":`, images);
-    } else {
-        console.warn("No images scraped.");
-    }
+    await scrapeAllPages();
     })();
+                      
                       
                       
                       
