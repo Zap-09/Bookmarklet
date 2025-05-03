@@ -55,7 +55,6 @@
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
     
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-    const randomDelay = (base, variance) => delay(base + Math.floor(Math.random() * variance));
     
     let wakeLock = null;
     const requestWakeLock = async () => {
@@ -92,7 +91,7 @@
         const img = document.querySelector('img[alt="Page 1"]');
         if (img) return img;
         window.scrollBy(0, 500);
-        await randomDelay(250, 300);
+        await delay(300);
         attempt++;
         }
         return null;
@@ -104,7 +103,7 @@
         while (attempt < maxAttempts) {
         const img = document.querySelector('img.m-auto');
         if (img && img.src !== previousSrc && img.complete && img.naturalWidth !== 0) return img;
-        await randomDelay(400, 300);
+        await delay(500);
         attempt++;
         }
         return null;
@@ -123,6 +122,14 @@
         img.dispatchEvent(clickEvent);
     };
     
+    const convertBlobToFile = async (blobUrl) => {
+        const response = await fetch(blobUrl);
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        const file = new File([arrayBuffer], "image.jpg", { type: blob.type });
+        return file;
+    };
+    
     const scrapeAllPages = async () => {
         const xpath = "/html/body/div/div/main/section/header/div[2]/h1";
         const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
@@ -133,7 +140,7 @@
         if (!startImg) return [];
     
         startImg.click();
-        await randomDelay(700, 400);
+        await delay(1000);
     
         const imageSrcList = [];
         let previousSrc = '';
@@ -144,10 +151,9 @@
         if (!img || imageSrcList.includes(img.src)) break;
         imageSrcList.push(img.src);
         previousSrc = img.src;
-        await randomDelay(250, 200);
+        await delay(300);
         clickRightHalf(img);
-        await randomDelay(700, 500);
-        page++;
+        await delay(800);  // Fixed delay for page transition
         }
     
         return imageSrcList;
@@ -159,22 +165,29 @@
         const zip = new JSZip();
         const folder = zip.folder(zipName);
         let fileCount = 0;
+    
         for (let i = 0; i < imageUrls.length; i++) {
         const url = imageUrls[i];
         try {
+            let file;
+            if (url.startsWith('blob:')) {
+            file = await convertBlobToFile(url);
+            } else {
             const response = await fetch(url);
             const blob = await response.blob();
-            if (blob.size === 0) continue;
-            const ext = (blob.type.split('/')[1] || 'jpg').split(';')[0];
-            const fileName = `page-${String(i + 1).padStart(3, '0')}.${ext}`;
-            folder.file(fileName, blob);
+            file = new File([blob], `image-${i + 1}.jpg`, { type: blob.type });
+            }
+    
+            folder.file(file.name, file);
             fileCount++;
-            await randomDelay(150, 200);
+            await delay(300);  // Fixed delay for downloading
         } catch (e) {}
         }
-        if (fileCount === 0) return;
+    
+        if (fileCount > 0) {
         const content = await zip.generateAsync({ type: "blob" });
         saveAs(content, `${zipName}.zip`);
+        }
     };
     
     const images = await scrapeAllPages();
@@ -184,7 +197,8 @@
     
     await releaseWakeLock();
     })();
-    
+                      
+
                 </code>
             </pre>
         </section>
