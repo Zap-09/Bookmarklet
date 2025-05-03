@@ -113,11 +113,17 @@
         img.dispatchEvent(clickEvent);
     };
     
-    const scrapeAllPages = async (maxPages = 100) => {
-        const xpath = "/html/body/div/div/main/section/header/div[2]/h1";
-        const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-        const h1 = result.singleNodeValue;
+    const scrapeAllPages = async () => {
+        const titleXPath = "/html/body/div/div/main/section/header/div[2]/h1";
+        const countXPath = "/html/body/div/div/main/section/header/div[2]/div[2]/div[1]/a/span";
+    
+        const titleResult = document.evaluate(titleXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+        const h1 = titleResult.singleNodeValue;
         galleryTitle = h1 ? h1.textContent.trim().replace(/[<>:"/\\|?*]+/g, '_') : "Untitled";
+    
+        const countResult = document.evaluate(countXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+        const countNode = countResult.singleNodeValue;
+        const maxPages = countNode ? parseInt(countNode.textContent.trim()) : 100;
     
         const startImg = await scrollToPageOne();
         if (!startImg) return [];
@@ -153,7 +159,7 @@
             const ext = (blob.type.split('/')[1] || 'jpg').split(';')[0];
             const fileName = `page-${String(i + 1).padStart(3, '0')}.${ext}`;
             folder.file(fileName, blob);
-            await delay(200);
+            await delay(500);
         } catch (e) {}
         }
         try {
@@ -167,6 +173,7 @@
         await downloadAsZip(images, galleryTitle);
     }
     })();
+                      
                       
                       
                 </code>
