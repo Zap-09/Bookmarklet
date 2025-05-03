@@ -148,7 +148,7 @@
         for (let i = 0; i < imageUrls.length; i++) {
         const url = imageUrls[i];
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, { cache: "no-store" });
             const blob = await response.blob();
             const ext = (blob.type.split('/')[1] || 'jpg').split(';')[0];
             const fileName = `page-${String(i + 1).padStart(3, '0')}.${ext}`;
@@ -167,6 +167,7 @@
         await downloadAsZip(images, galleryTitle);
     }
     })();
+                      
                       
                 </code>
             </pre>
