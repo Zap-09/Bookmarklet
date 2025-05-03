@@ -55,6 +55,7 @@
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
     
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const randomDelay = (base, variance) => delay(base + Math.floor(Math.random() * variance));
     
     let wakeLock = null;
     const requestWakeLock = async () => {
@@ -91,7 +92,7 @@
         const img = document.querySelector('img[alt="Page 1"]');
         if (img) return img;
         window.scrollBy(0, 500);
-        await delay(300);
+        await randomDelay(250, 300);
         attempt++;
         }
         return null;
@@ -103,7 +104,7 @@
         while (attempt < maxAttempts) {
         const img = document.querySelector('img.m-auto');
         if (img && img.src !== previousSrc && img.complete && img.naturalWidth !== 0) return img;
-        await delay(500);
+        await randomDelay(400, 300);
         attempt++;
         }
         return null;
@@ -132,7 +133,7 @@
         if (!startImg) return [];
     
         startImg.click();
-        await delay(800);
+        await randomDelay(700, 400);
     
         const imageSrcList = [];
         let previousSrc = '';
@@ -143,9 +144,9 @@
         if (!img || imageSrcList.includes(img.src)) break;
         imageSrcList.push(img.src);
         previousSrc = img.src;
-        await delay(300);
+        await randomDelay(250, 200);
         clickRightHalf(img);
-        await delay(800);
+        await randomDelay(700, 500);
         page++;
         }
     
@@ -165,7 +166,7 @@
             const ext = (blob.type.split('/')[1] || 'jpg').split(';')[0];
             const fileName = `page-${String(i + 1).padStart(3, '0')}.${ext}`;
             folder.file(fileName, blob);
-            await delay(200);
+            await randomDelay(150, 200);
         } catch (e) {}
         }
         const content = await zip.generateAsync({ type: "blob" });
@@ -179,6 +180,7 @@
     
     await releaseWakeLock();
     })();
+                      
                       
                       
                       
