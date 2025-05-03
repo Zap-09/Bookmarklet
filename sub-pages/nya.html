@@ -55,6 +55,7 @@
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
     
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const randomDelay = (min, max) => delay(Math.floor(Math.random() * (max - min + 1)) + min);
     
     let wakeLock = null;
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
@@ -164,7 +165,7 @@
             }
             folder.file(file.name, file);
             downloadedSet.add(url);
-            await delay(200);
+            await randomDelay(200, 500);
         } catch {}
         }
     
@@ -196,7 +197,7 @@
         const src = img.src;
         if (downloadedSet.has(src)) {
             clickRightHalf(img);
-            await delay(800);
+            await randomDelay(500, 1000);
             continue;
         }
     
@@ -209,8 +210,9 @@
         images.push(src);
         downloadedSet.add(src);
     
+        await randomDelay(400, 1000);
         clickRightHalf(img);
-        await delay(900);
+        await randomDelay(800, 1500);
         }
     
         return images;
@@ -225,12 +227,6 @@
     
     await releaseWakeLock();
     })();
-                      
-                      
-                      
-                      
-                      
-                      
                       
                 </code>
             </pre>
