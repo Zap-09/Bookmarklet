@@ -45,12 +45,16 @@
                 <code>
 (async () => {
     const delay = ms => new Promise(res => setTimeout(res, ms));
-    await new Promise(res => {
+    
+    const loadScript = src => new Promise(res => {
         const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.min.js';
+        s.src = src;
         s.onload = res;
         document.head.appendChild(s);
     });
+    
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
     
     let galleryTitle = "";
     const scrollToPageOne = async () => {
@@ -102,13 +106,17 @@
         const tRes = document.evaluate("/html/body/div/div/main/section/header/div[2]/h1", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         const h1 = tRes.singleNodeValue;
         galleryTitle = h1 ? h1.textContent.trim().replace(/[<>:\"/\\|?*]+/g, '_') : "Untitled";
+    
         const cRes = document.evaluate("/html/body/div/div/main/section/header/div[2]/div[2]/div[1]/a/span", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         const countNode = cRes.singleNodeValue;
-        const maxPages = countNode ? parseInt(countNode.textContent.trim()) : 100;
+        const basePages = countNode ? parseInt(countNode.textContent.trim()) : 100;
+        const maxPages = basePages + 10;
+    
         const startImg = await scrollToPageOne();
         if (!startImg) return [];
         startImg.click();
         await delay(800);
+    
         const imageSrcList = [];
         let prev = '';
         let page = 1;
@@ -125,36 +133,37 @@
         return imageSrcList;
     };
     
-    const downloadFflateZip = async (urls, name) => {
-        const files = {};
+    const downloadZip = async (urls, name) => {
+        const zip = new JSZip();
+        const folder = zip.folder(name);
         for (let i = 0; i < urls.length; i++) {
         try {
             const res = await fetch(urls[i]);
             const blob = await res.blob();
             const ext = (blob.type.split("/")[1] || "jpg").split(";")[0];
-            const buffer = new Uint8Array(await blob.arrayBuffer());
             const fname = `page-${String(i + 1).padStart(3, '0')}.${ext}`;
-            files[fname] = buffer;
+            folder.file(fname, blob);
             await delay(200);
         } catch (e) {
             console.error("Failed:", urls[i], e);
         }
         }
-        const zipped = fflate.zipSync(files, { level: 6 });
-        const blob = new Blob([zipped], { type: "application/zip" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = name + ".zip";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const out = await zip.generateAsync({ type: "blob" });
+        saveAs(out, name + ".zip");
+    };
+    
+    const randomTag = () => {
+        const l = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+        const n = Math.floor(Math.random() * 90) + 10;
+        return `{${l}${n}}`;
     };
     
     const images = await scrapeAllPages();
     if (images.length) {
-        await downloadFflateZip(images, galleryTitle);
+        await downloadZip(images, `${galleryTitle} ${randomTag()}`);
     }
     })();
+                      
                       
 
                       
