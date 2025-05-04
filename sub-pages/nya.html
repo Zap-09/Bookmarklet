@@ -114,14 +114,9 @@
                             if (img) {
                               if (img.src !== prevSrc && img.complete && img.naturalWidth > 10) {
                                 return img;
-                              } else if (!img.complete || img.naturalWidth <= 10) {
-                                const src = img.src;
-                                img.src = '';
-                                img.src = src;
-                                if (attempt > 10) {
-                                  window.scrollBy(0, 100);
-                                  window.dispatchEvent(new Event('resize'));
-                                }
+                              } else if (attempt > 10 && (!img.complete || img.naturalWidth <= 10)) {
+                                location.reload();
+                                await new Promise(() => {});
                               }
                             }
                             await delay(250);
