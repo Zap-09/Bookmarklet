@@ -111,13 +111,8 @@
                           let attempt = 0;
                           while (attempt < maxAttempts) {
                             const img = document.querySelector('img.m-auto');
-                            if (img) {
-                              if (img.src !== prevSrc && img.complete && img.naturalWidth > 10) {
-                                return img;
-                              } else if (attempt > 10 && (!img.complete || img.naturalWidth <= 10)) {
-                                location.reload();
-                                await new Promise(() => {});
-                              }
+                            if (img && img.src !== prevSrc && img.complete && img.naturalWidth > 10) {
+                              return img;
                             }
                             await delay(250);
                             attempt++;
