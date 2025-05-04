@@ -153,6 +153,18 @@
     return new File([await blob.arrayBuffer()], filename, { type: blob.type });
   };
 
+  const batchDownload = async (urls, startIndex) => {
+    await Promise.all(urls.map(async (url, i) => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) return;
+        const blob = await response.blob();
+        saveAs(blob, `picture_${startIndex + i + 1}.jpg`);
+      } catch {}
+    }));
+    await delay(300);
+  };
+
   const scrapeAndDownload = async () => {
     const titleXPath = "/html/body/div/div/main/section/header/div[2]/h1";
     const result = document.evaluate(titleXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
@@ -165,7 +177,6 @@
     const seenLinks = new Set();
     const imageUrls = [];
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-
     const startImg = await scrollToPageOne();
     if (!startImg) return;
 
@@ -173,21 +184,21 @@
     await delay(500);
 
     let previousSrc = '';
+    let batch = [];
+
     while (imageUrls.length < totalPages) {
       const img = await waitForImageChange(previousSrc);
       if (!img || seenLinks.has(img.src)) continue;
       previousSrc = img.src;
 
       if (isMobile) {
-        try {
-          const response = await fetch(img.src);
-          if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-          const blob = await response.blob();
-          saveAs(blob, `picture_${imageUrls.length + 1}.jpg`);
-          seenLinks.add(img.src);
-          imageUrls.push(img.src);
-        } catch {}
-        await delay(300);
+        batch.push(img.src);
+        seenLinks.add(img.src);
+        imageUrls.push(img.src);
+        if (batch.length === 10 || imageUrls.length === totalPages) {
+          await batchDownload(batch, imageUrls.length - batch.length);
+          batch = [];
+        }
       } else {
         seenLinks.add(img.src);
         imageUrls.push(img.src);
