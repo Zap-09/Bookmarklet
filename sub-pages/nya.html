@@ -122,8 +122,8 @@
     const maxAttempts = 40;
     let attempt = 0;
     while (attempt < maxAttempts) {
-      const retryText = Array.from(document.querySelectorAll("div,span,p")).find(el => el.textContent?.toLowerCase().includes("tap to retry"));
-      if (retryText) clickCenter();
+      const retryNode = document.evaluate("/html/body/div/div/main/section/main/div/div/button/span", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+      if (retryNode && retryNode.textContent.toLowerCase().includes("tap to retry")) clickCenter();
       const img = document.querySelector('img.m-auto');
       if (img && img.src !== prevSrc && img.complete && img.naturalWidth > 10) {
         return img;
