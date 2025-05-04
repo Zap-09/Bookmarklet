@@ -167,18 +167,21 @@
                           while (imageUrls.length < totalPages) {
                             const img = await waitForImageChange(previousSrc);
                             if (!img || seenLinks.has(img.src)) continue;
-                            seenLinks.add(img.src);
                             previousSrc = img.src;
-                            imageUrls.push(img.src);
                       
                             if (isMobile) {
                               try {
                                 const response = await fetch(img.src);
                                 if (!response.ok) throw new Error(`HTTP error ${response.status}`);
                                 const blob = await response.blob();
-                                saveAs(blob, `picture_${imageUrls.length}.jpg`);
+                                saveAs(blob, `picture_${imageUrls.length + 1}.jpg`);
+                                seenLinks.add(img.src);
+                                imageUrls.push(img.src);
                               } catch {}
                               await delay(300);
+                            } else {
+                              seenLinks.add(img.src);
+                              imageUrls.push(img.src);
                             }
                       
                             await delay(200);
