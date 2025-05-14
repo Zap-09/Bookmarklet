@@ -82,6 +82,7 @@
 
   let galleryTitle = "";
   let totalPages = 0;
+  const imageDB = new Set();
 
   const getPageCount = () => {
     try {
@@ -106,34 +107,6 @@
     return null;
   };
 
-  const clickCenter = () => {
-    const x = window.innerWidth / 2;
-    const y = window.innerHeight / 2;
-    const event = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      clientX: x,
-      clientY: y,
-    });
-    document.dispatchEvent(event);
-  };
-
-  const waitForImageChange = async (prevSrc) => {
-    const maxAttempts = 40;
-    let attempt = 0;
-    while (attempt < maxAttempts) {
-      const retryNode = document.evaluate("/html/body/div/div/main/section/main/div/div/button/span", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-      if (retryNode && retryNode.textContent.toLowerCase().includes("tap to retry")) clickCenter();
-      const img = document.querySelector('img.m-auto');
-      if (img && img.src !== prevSrc && img.complete && img.naturalWidth > 10) {
-        return img;
-      }
-      await delay(250);
-      attempt++;
-    }
-    return null;
-  };
-
   const clickRightHalf = (img) => {
     const rect = img.getBoundingClientRect();
     const x = rect.left + rect.width * (0.7 + Math.random() * 0.1);
@@ -153,19 +126,9 @@
     return new File([await blob.arrayBuffer()], filename, { type: blob.type });
   };
 
-  const batchDownload = async (urls, startIndex) => {
-    await Promise.all(urls.map(async (url, i) => {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) return;
-        const blob = await response.blob();
-        saveAs(blob, `picture_${startIndex + i + 1}.jpg`);
-      } catch {}
-    }));
-    await delay(300);
-  };
-
-  const scrapeAndDownload = async () => {
+  const scrapeAndStoreImages = async () => {
+    imageDB.clear(); // Clear the DB before starting
+    
     const titleXPath = "/html/body/div/div/main/section/header/div[2]/h1";
     const result = document.evaluate(titleXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
     const h1 = result.singleNodeValue;
@@ -174,69 +137,55 @@
     totalPages = getPageCount();
     if (!totalPages || isNaN(totalPages) || totalPages < 1) return;
 
-    const seenLinks = new Set();
-    const imageUrls = [];
-    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
     const startImg = await scrollToPageOne();
     if (!startImg) return;
 
     startImg.click();
     await delay(500);
 
-    let previousSrc = '';
-    let batch = [];
-
-    while (imageUrls.length < totalPages) {
-      const img = await waitForImageChange(previousSrc);
-      if (!img || seenLinks.has(img.src)) continue;
-      previousSrc = img.src;
-
-      if (isMobile) {
-        batch.push(img.src);
-        seenLinks.add(img.src);
-        imageUrls.push(img.src);
-        if (batch.length === 10 || imageUrls.length === totalPages) {
-          await batchDownload(batch, imageUrls.length - batch.length);
-          batch = [];
-        }
-      } else {
-        seenLinks.add(img.src);
-        imageUrls.push(img.src);
+    while (imageDB.size < totalPages) {
+      const img = document.querySelector('img.m-auto');
+      if (img && !imageDB.has(img.src)) {
+        imageDB.add(img.src);
       }
-
       await delay(200);
       clickRightHalf(img);
       await delay(450);
     }
-
-    if (!isMobile) {
-      const zip = new JSZip();
-      const folder = zip.folder(galleryTitle);
-      for (let i = 0; i < imageUrls.length; i++) {
-        const url = imageUrls[i];
-        try {
-          let file;
-          const filename = `picture_${i + 1}.jpg`;
-          if (url.startsWith('blob:')) {
-            file = await convertBlobToFile(url, filename);
-          } else {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-            const blob = await response.blob();
-            file = new File([blob], filename, { type: blob.type });
-          }
-          folder.file(file.name, file);
-          await delay(200);
-        } catch {}
-      }
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, `${galleryTitle}.zip`);
-    }
   };
 
-  await scrapeAndDownload();
+  const downloadImagesAsZip = async () => {
+    const zip = new JSZip();
+    const folder = zip.folder(galleryTitle);
+    let index = 0;
+
+    for (const url of imageDB) {
+      try {
+        let file;
+        const filename = `picture_${++index}.jpg`;
+        if (url.startsWith('blob:')) {
+          file = await convertBlobToFile(url, filename);
+        } else {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+          const blob = await response.blob();
+          file = new File([blob], filename, { type: blob.type });
+        }
+        folder.file(file.name, file);
+        await delay(100);
+      } catch {}
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    saveAs(content, `${galleryTitle}.zip`);
+    imageDB.clear(); // Clear the DB after download
+  };
+
+  await scrapeAndStoreImages();
+  await downloadImagesAsZip();
   await releaseWakeLock();
 })();
+
 
                          
 
