@@ -120,6 +120,31 @@
     img.dispatchEvent(clickEvent);
   };
 
+  const clickCenter = () => {
+    const x = window.innerWidth / 2;
+    const y = window.innerHeight / 2;
+    const event = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y,
+    });
+    document.dispatchEvent(event);
+  };
+
+  setInterval(() => {
+    const retryNode = document.evaluate(
+      "/html/body/div/div/main/section/main/div/div/button/span",
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    ).singleNodeValue;
+    if (retryNode && retryNode.textContent.toLowerCase().includes("tap to retry")) {
+      clickCenter();
+    }
+  }, 400);
+
   const convertBlobToFile = async (blobUrl, filename) => {
     const response = await fetch(blobUrl);
     const blob = await response.blob();
@@ -150,13 +175,12 @@
       }
 
       if (imageDB.size >= totalPages) {
-        break; // Stop clicking if we have all the images
+        break;
       }
 
       await delay(800);
       clickRightHalf(img);
 
-      // Check if we reached the last page
       const currentPageSpan = document.querySelector('span.page-number');
       if (currentPageSpan && parseInt(currentPageSpan.textContent.trim()) >= totalPages) {
         break;
