@@ -127,7 +127,7 @@
   };
 
   const scrapeAndStoreImages = async () => {
-    imageDB.clear(); // Clear the DB before starting
+    imageDB.clear(); 
     
     const titleXPath = "/html/body/div/div/main/section/header/div[2]/h1";
     const result = document.evaluate(titleXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
@@ -141,16 +141,26 @@
     if (!startImg) return;
 
     startImg.click();
-    await delay(500);
+    await delay(800);
 
     while (imageDB.size < totalPages) {
       const img = document.querySelector('img.m-auto');
       if (img && !imageDB.has(img.src)) {
         imageDB.add(img.src);
       }
-      await delay(200);
+
+      if (imageDB.size >= totalPages) {
+        break; // Stop clicking if we have all the images
+      }
+
+      await delay(800);
       clickRightHalf(img);
-      await delay(450);
+
+      // Check if we reached the last page
+      const currentPageSpan = document.querySelector('span.page-number');
+      if (currentPageSpan && parseInt(currentPageSpan.textContent.trim()) >= totalPages) {
+        break;
+      }
     }
   };
 
@@ -178,7 +188,7 @@
 
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, `${galleryTitle}.zip`);
-    imageDB.clear(); // Clear the DB after download
+    imageDB.clear();
   };
 
   await scrapeAndStoreImages();
