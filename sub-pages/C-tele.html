@@ -39,8 +39,8 @@
         <p class="mobile-mode">Reading the code in mobile isn't the best But you can turn on Desktop mode it might help.</p>
 
         <h3 id="readable_code_section">Readable Code</h3>
-        <section>
-            <pre id="readable_code" data-code="readable_code">
+        <section id="readable_code">
+            <pre data-code="readable_code">
                 <code>
 (async function () {
     try {
@@ -173,7 +173,7 @@
 javascript:(async function(){
   const res = await fetch(&apos;https://zap-09.github.io/Bookmarklet/sub-pages/C-tele.html&apos;);
   const html = await res.text();
-  const container = document.createElement(&apos;pre&apos;);
+  const container = document.createElement(&apos;div&apos;);
   container.innerHTML = html;
   const section = container.querySelector(&apos;#readable_code&apos;);
   if (section) {
