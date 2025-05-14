@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.addEventListener("DOMContentLoaded", function () {
     const copyButton = document.getElementById('copyButton2');
-    const codeElement = document.querySelector('pre[data-code="readable_code"]');
+    const codeElement = document.querySelector('pre[data-code="code"]');
   
     copyButton.addEventListener('click', async function () {
       const codeText = codeElement?.textContent?.trim();
