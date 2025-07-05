@@ -128,7 +128,7 @@ try {
 
     for (let i = 0; i < urls.length; i++) {
         const url = urls[i];
-        const filename = `image ${i + 1}.jpg`;
+        const filename =  `image ${urls.length - i}.jpg`;
 
         try {
             const blob = await fetch(url).then(r => {
