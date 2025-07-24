@@ -40,123 +40,69 @@
         <section id="raw_code">
         <pre>
 <code>
-(async function () {
-try {
-    const seen = new Set();
-    const urls = [];
+function getImages() {
+        const imageArray = document.querySelectorAll(".gallery-item");
+        const imgSrcArray = [];
 
-    function shouldIgnore(img) {
-        const classList = img.classList;
-        return (
-            classList.contains('header-logo-dark') ||
-            (classList.contains('header_logo') && classList.contains('header-logo'))
-        );
+        imageArray.forEach((i) => {
+            const img = i.querySelector("img");
+            const src = img?.getAttribute("src");
+            if (src) imgSrcArray.push(src);
+        });
+
+        return imgSrcArray;
     }
 
-    function getMainElement() {
-        const result = document.evaluate(
-            '//*[@id="gallery-1"]',
-            document,
-            null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
-        );
-        return result.singleNodeValue;
+    function addJSzip() {
+        return new Promise((resolve) => {
+            const script = document.createElement("script");
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+            script.onload = resolve;
+            document.head.appendChild(script);
+        });
     }
 
     function getCleanTitle() {
-        const h1 = document.querySelector('h1.entry-title');
-        if (!h1) return 'gallery';
-
-        let text = h1.textContent.trim();
-        text = text.replace(/["“”'].*?["“”']/g, '');
-        text = text.replace(/\b\d+\s+(photos?|videos?)\b/gi, '');
-        text = text.replace(/[^\x00-\x7F]/g, '');
-        text = text.replace(/[^a-zA-Z0-9\- ]/g, '');
-        text = text.replace(/\s+/g, ' ').trim();
-
-        return text || 'gallery';
+        const h1 = document.querySelector("h1.entry-title");
+        if (!h1) return "Gallery";
+        let title = h1.textContent.trim();
+        title = title.replace(/["“”'].*?["“”']/g, "");
+        title = title.replace(/\b\d+\s+(photos?|videos?)\b/gi, "");
+        title = title.replace(/[^\x00-\x7F]/g, "");
+        title = title.replace(/[^a-zA-Z0-9\- ]/g, "");
+        title = title.replace(/\s+/g, " ").trim();
+        return title;
     }
 
-    async function scrollAndCollect() {
-        const mainEl = getMainElement();
-        if (!mainEl) throw new Error('Element with id="gallery-1" not found.');
+    async function downloadAndZip(url_list, filename) {
+        const zip = new JSZip();
 
-        let triesWithoutNew = 0;
+        const imagesPromises = url_list.map(async (url, index) => {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                const blob = await response.blob();
+                const reverseIndex = url_list.length - index;
+                zip.file(`Photo${reverseIndex}.jpg`, blob);
+            } catch (err) {
+                console.warn(`Failed to fetch image: ${url}`, err);
+            }
+        });
 
-        while (triesWithoutNew < 3) {
-            window.scrollBy(0, window.innerHeight);
-            await new Promise(r => setTimeout(r, 800));
+        await Promise.all(imagesPromises);
 
-            const images = mainEl.querySelectorAll('img');
-            let foundNew = false;
+        const content = await zip.generateAsync({ type: "blob" });
 
-            images.forEach(img => {
-                if (shouldIgnore(img)) return;
-
-                const src = img.currentSrc || img.src;
-                if (src && !seen.has(src)) {
-                    seen.add(src);
-                    urls.push(src);
-                    foundNew = true;
-                }
-            });
-
-            triesWithoutNew = foundNew ? 0 : triesWithoutNew + 1;
-        }
-
-        if (!urls.length) throw new Error('No images found.');
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(content);
+        link.download = `${filename}.zip`;
+        link.click();
     }
 
-    async function loadJSZip() {
-        if (!window.JSZip) {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-            document.head.appendChild(script);
-
-            await new Promise((resolve, reject) => {
-                script.onload = resolve;
-                script.onerror = () => reject(new Error('Failed to load JSZip library.'));
-            });
-        }
-    }
-
-    await loadJSZip();
-    await scrollAndCollect();
-
-    const zip = new JSZip();
-
-    for (let i = 0; i < urls.length; i++) {
-        const url = urls[i];
-        const filename =  `image ${urls.length - i}.jpg`;
-
-        try {
-            const blob = await fetch(url).then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.blob();
-            });
-
-            zip.file(filename, blob);
-        } catch (err) {
-            console.warn(`Failed to fetch image: ${url}`, err);
-        }
-    }
-
-    const content = await zip.generateAsync({ type: 'blob' });
-    const zipName = getCleanTitle() + '.zip';
-
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(content);
-    link.download = zipName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-} catch (error) {
-    alert('Error: ' + error.message);
-    console.error(error);
-}
-})();
+    await addJSzip();
+    const title = getCleanTitle();
+    const images = getImages();
+    await downloadAndZip(images, title);
 
 </code>
         </pre>
@@ -177,9 +123,11 @@ javascript: (async function () {
     container.innerHTML = html;
     const section = container.querySelector("#raw_code");
     if (section) {
+        alert("Script started")
         const code = section.textContent.trim();
+        let wrappedCode = `(async () => {\n${code}\n})();`;
         try {
-            eval(code);
+            eval(wrappedCode);
         } catch (e) {
             alert("Error running code: " + e.message);
             console.error(e);
