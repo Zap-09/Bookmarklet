@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Tele Bookmarklet</title>
+    <link rel="stylesheet" href="../css/sub-pages.css">
+    <link rel="shortcut icon" href="../assets/icon.ico" type="image/x-icon">
+    <script src="../scripts/main.js" defer></script>
+</head>
+<body>
+    <h1>
+        C Tele
+    </h1>
+    <main>
+
+        <div>
+            <p class="description">
+            </p>
+        </div>
+        <fieldset id="navigation">
+            <legend>Navigation</legend>
+            <ul>
+                <li>
+                    <a href="../index.html" id="home_btn">Home&nbsp;page</a>
+                    <br>
+                    <br>
+                </li>
+                
+                <li>
+                    <a href="#raw_code_section">Raw code</a>
+                </li>
+                <li>
+                    <a href="#bookmark_section">Bookmark</a>
+                </li>
+            </ul>
+        </fieldset>
+        <p class="mobile-mode">Reading the code in mobile isn't the best But you can turn on Desktop mode it might help.</p>
+        <h3 id="raw_code_section">Raw Code</h3>
+        <section id="raw_code">
+        <pre>
+<code>
+function getImages() {
+    let imageArray = document.querySelectorAll(".gallery-item");
+
+    let imgSrcArray = [];
+
+    imageArray.forEach((i) => {
+        let image = i.querySelector("img").getAttribute("src");
+        imgSrcArray.push(image);
+    });
+    return imgSrcArray;
+}
+
+function addJSzip() {
+    return new Promise((resolve) => {
+        let script = document.createElement("script");
+        script.src =
+            "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+        script.onload = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+function getCleanTitle() {
+    let h1 = document.querySelector("h1.entry-title");
+    if (!h1) return "Galley";
+    let title = h1.textContent.trim();
+    title = title.replace(/["“”'].*?["“”']/g, "");
+    title = title.replace(/\b\d+\s+(photos?|videos?)\b/gi, "");
+    title = title.replace(/[^\x00-\x7F]/g, "");
+    title = title.replace(/[^a-zA-Z0-9\- ]/g, "");
+    title = title.replace(/\s+/g, " ").trim();
+
+    return title;
+}
+
+async function downloadAndZip(url_list, filename) {
+    let zip = new JSZip();
+    let imagesPromises = url_list.map(async (url, index) => {
+        let response = await fetch(url);
+        let blob = await response.blob();
+
+        let reverseIndex = url_list.length - index;
+        zip.file(`Photo${reverseIndex}.jpg`, blob);
+    });
+    await Promise.all(imagesPromises);
+
+    zip.generateAsync({ type: "blob" }).then(function (content) {
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(content);
+        link.download = `${filename}.zip`;
+        link.click();
+    });
+}
+
+async function main() {
+    await addJSzip();
+    let title = getCleanTitle();
+    let imageUrl = getImages();
+    await downloadAndZip(imageUrl, title);
+}
+
+main();
+</code>
+        </pre>
+        </section>
+        <button id="copyButton" onclick="copyText('raw_code','copyButton')">Copy</button>
+
+
+        <h3 id="bookmark_section"> Bookmark</h3>
+        <section id="bookmark">
+            <pre>
+                <code data-code="booklet">
+javascript: (async function () {
+    const res = await fetch(
+        "https://zap-09.github.io/Bookmarklet/sub-pages/test.html"
+    );
+    const html = await res.text();
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    const section = container.querySelector("#raw_code");
+    if (section) {
+        alert("Script started")
+        const code = section.textContent.trim();
+        try {
+            eval(code);
+        } catch (e) {
+            alert("Error running code: " + e.message);
+            console.error(e);
+        }
+    } else {
+        alert("Script not found in &lt;section id='raw_code'&gt;.");
+    }
+})();
+
+                </code>
+            </pre>
+        </section>
+        <button id="copyButton2" onclick="copyText('bookmark','copyButton2')">Copy</button>
+    </main>
+    <footer>
+        <ul>
+            <li>
+        <a href="#">Back to top</a>
+            </li>
+        </ul>
+    </footer>
+</body>
+</html>

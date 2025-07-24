@@ -37,9 +37,9 @@
         </fieldset>
         <p class="mobile-mode">Reading the code in mobile isn't the best But you can turn on Desktop mode it might help.</p>
         <h3 id="raw_code_section">Raw Code</h3>
-        <section id="raw_code" data-code="code">
+        <section id="raw_code">
         <pre>
-            <code>
+<code>
 (async function () {
 try {
     const seen = new Set();
@@ -161,36 +161,38 @@ try {
 </code>
         </pre>
         </section>
-        <button id="copyButton2">Copy</button>
+        <button id="copyButton" onclick="copyText('raw_code','copyButton')">Copy</button>
 
 
         <h3 id="bookmark_section"> Bookmark</h3>
         <section id="bookmark">
             <pre>
                 <code data-code="booklet">
-javascript:(async function(){
-  const res = await fetch(&apos;https://zap-09.github.io/Bookmarklet/sub-pages/C-tele.html&apos;);
-  const html = await res.text();
-  const container = document.createElement(&apos;div&apos;);
-  container.innerHTML = html;
-  const section = container.querySelector(&apos;#raw_code&apos;);
-  if (section) {
-    const code = section.textContent.trim();
-    try {
-      eval(code);
-    } catch (e) {
-      alert(&quot;Error running code: &quot; + e.message);
-      console.error(e);
+javascript: (async function () {
+    const res = await fetch(
+        "https://zap-09.github.io/Bookmarklet/sub-pages/C-tele.html"
+    );
+    const html = await res.text();
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    const section = container.querySelector("#raw_code");
+    if (section) {
+        const code = section.textContent.trim();
+        try {
+            eval(code);
+        } catch (e) {
+            alert("Error running code: " + e.message);
+            console.error(e);
+        }
+    } else {
+        alert("Script not found in &lt;section id='raw_code'&gt;.");
     }
-  } else {
-    alert(&quot;Script not found in &lt;section id=&apos;raw_code&apos;&gt;.&quot;);
-  }
 })();
 
                 </code>
             </pre>
         </section>
-        <button id="copyButton">Copy</button>
+        <button id="copyButton2" onclick="copyText('bookmark','copyButton2')">Copy</button>
     </main>
     <footer>
         <ul>
